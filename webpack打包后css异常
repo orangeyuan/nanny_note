@@ -55,4 +55,4 @@ we've added Browserslist to provide different output depending on the browsers t
 大致说【cssnano】是一个基于【PostCSS】的压缩工具，会基于用户的配置进行打包，同时提供了Browserslist配置对不同浏览器的支持。
 到这已经弄明白了事情的来龙去脉，问题也得到了真正的解决
 
-normalising unicode-range descriptors, even mangling gradient parameters for a smaller output value! 
+
