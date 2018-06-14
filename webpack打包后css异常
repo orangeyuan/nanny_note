@@ -1,0 +1,58 @@
+问题描述：
+webpack + vue-cli 搭建项目，本地及测试环境打包都正常，但npm run build项目时后，css里面的部分属性被删除了。
+原本是这样写的：
+  background: -webkit-linear-gradient(@direction, #91f0d6,#53dfc6);
+  background: -o-linear-gradient(@direction, #91f0d6,#53dfc6);
+  background: -moz-linear-gradient(@direction, #91f0d6,#53dfc6);
+  background: linear-gradient(@direction, #91f0d6,#53dfc6);
+结果npm run build项目后，变成这样了：
+  background: -moz-linear-gradient(@direction, #91f0d6,#53dfc6);
+  background: linear-gradient(@direction, #91f0d6,#53dfc6);
+导致部分样式异常
+    
+解决方法：
+网上搜了下，有人说配置autoprefixer，但是vue-cli本来就有配置，参照网上做了一些调整还是不行。后来参照网上一个解决方案把压缩css的代码给注释掉就行了，
+即webpack.prod.conf.js中的如下代码注释掉：
+  new OptimizeCSSPlugin({
+      cssProcessorOptions: config.build.productionSourceMap ? {
+          safe: true,
+          map: {
+              inline: false
+          }
+      } : {
+          safe: true
+      }
+  })
+虽然不明白为什么注释掉压缩就可以了，但当时因为时间问题也没细究。后来空闲后又搜了下这个问题，才搞明白，现记录下来以供参考。
+
+问题分析：
+针对以上问题网上搜到了一个更优的解决根源问题的方案，说导致以上问题的原来是【因为autoprefixer 使用了 browserslist 作为依赖】，
+修改package.json中的【browserslist】即可：
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "last 10 Chrome versions",
+    "last 5 Firefox versions",
+    "Safari >= 6",
+    "ie > 8"
+  ]
+ 修改后确实生效了，顺着这个思路去了解了一下，终于弄明白了为什么去掉压缩代码也可以解决。
+ 现在npm上看了下optimize-css-assets-webpack-plugin，
+ 就是解决ExtractTextPlugin分离出的js重复问题，同时压缩提取出的css，压缩通过配置cssProcessor，默认使用的【cssnano】，
+ 接着看了下【cssnano】的讲解：
+cssnano is a modern, modular compression tool written on top of the PostCSS ecosystem,
+which allows us to use a lot of powerful features in order to compact CSS appropriately.
+
+Our preset system allow you to load cssnano in a different configuration depending on your needs; 
+the default preset performs safe transforms, whereas the advanced preset performs more aggressive transforms that are safe only when your site meets the requirements;
+but regardless of the preset you choose, we handle more than whitespace transforms!
+
+Optimisations range from compressing colors & removing comments, to discarding overridden at-rules, 
+normalising unicode-range descriptors, even mangling gradient parameters for a smaller output value! 
+In addition, where it's made sense for a transform, 
+we've added Browserslist to provide different output depending on the browsers that you support.
+
+大致说【cssnano】是一个基于【PostCSS】的压缩工具，会基于用户的配置进行打包，同时提供了Browserslist配置对不同浏览器的支持。
+到这已经弄明白了事情的来龙去脉，问题也得到了真正的解决
+
+normalising unicode-range descriptors, even mangling gradient parameters for a smaller output value! 
